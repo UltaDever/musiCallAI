@@ -80,17 +80,33 @@ async function loadSavedDirectory() {
 }
 
 // Сканирование папки
+// Сканирование папки с поддержкой mp3, m4a и opus
 async function readDirectory(dirHandle) {
     tracks = [];
+    
+    // Список расширений, которые наш плеер считает музыкой
+    const allowedExtensions = ['.mp3', '.m4a', '.opus'];
+
     for await (const entry of dirHandle.values()) {
-        if (entry.kind === 'file' && entry.name.toLowerCase().endsWith('.mp3')) {
-            const file = await entry.getFile();
-            tracks.push({
-                name: file.name.replace(/\.[^/.]+$/, ""), 
-                url: URL.createObjectURL(file) 
-            });
+        if (entry.kind === 'file') {
+            // Проверяем, заканчивается ли имя файла на какое-то из разрешенных расширений
+            const fileNameLower = entry.name.toLowerCase();
+            const isMusic = allowedExtensions.some(ext => fileNameLower.endsWith(ext));
+
+            if (isMusic) {
+                const file = await entry.getFile();
+                
+                // Красиво убираем расширение из названия трека (.mp3, .m4a, .opus)
+                const cleanName = entry.name.replace(/\.(mp3|m4a|opus)$/i, "");
+
+                tracks.push({
+                    name: cleanName, 
+                    url: URL.createObjectURL(file) 
+                });
+            }
         }
     }
+    
     renderTracks();
 }
 
