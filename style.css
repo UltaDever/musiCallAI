@@ -1,0 +1,180 @@
+:root {
+    --color-background: #0d0d0d;
+    --color-surface: #16161a;
+    --color-surface-card: #222227;
+    --color-accent: #ff0055; /* Агрессивный неоновый розовый/красный */
+    --def-color-text: #ffffff;
+    --muted-text: #71717a;
+}
+
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background-color: var(--color-background);
+    color: var(--def-color-text);
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+}
+
+.app-container {
+    width: 100%;
+    max-width: 480px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    box-sizing: border-box;
+    padding-bottom: 70px; /* Место под таббар */
+}
+
+.app-screen {
+    display: none;
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.app-screen.active {
+    display: block;
+}
+
+/* Навигация (Таббар) */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    max-width: 480px;
+    height: 65px;
+    background: var(--color-surface);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    border-top: 1px solid #27272a;
+    z-index: 100;
+}
+
+.nav-item {
+    background: none;
+    border: none;
+    color: var(--muted-text);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.nav-item i { font-size: 20px; }
+.nav-item.active { color: var(--color-accent); }
+
+/* Карточка плеера */
+.player-mini-card {
+    background: var(--color-surface);
+    border-radius: 24px;
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.img {
+    width: 160px;
+    height: 160px;
+    object-fit: cover;
+    border-radius: 50%; /* Сделаем круглым */
+    border: 4px solid #27272a;
+}
+
+.track-info { margin: 15px 0; }
+.track-title { font-size: 20px; font-weight: bold; }
+.track-artist { color: var(--muted-text); font-size: 14px; }
+
+/* Управление звуком и временем */
+.volume-container, .progress-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 12px 0;
+    color: var(--muted-text);
+    font-size: 13px;
+}
+
+input[type="range"] {
+    flex: 1;
+    accent-color: var(--color-accent);
+}
+
+.controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 30px;
+    margin-top: 15px;
+}
+
+.ctrl-btn { background: none; border: none; color: white; font-size: 24px; }
+.play-btn {
+    background: var(--color-accent);
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Списки */
+.section-title { font-size: 18px; font-weight: bold; margin-bottom: 10px; }
+.list-container { list-style: none; padding: 0; margin: 0; }
+.track-item {
+    background: var(--color-surface);
+    padding: 12px 16px;
+    border-radius: 12px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.track-item.current { border-left: 4px solid var(--color-accent); }
+
+/* Экран Настроек */
+.screen-header { font-size: 24px; margin-bottom: 20px; }
+.settings-group {
+    background: var(--color-surface);
+    padding: 15px;
+    border-radius: 16px;
+    margin-bottom: 15px;
+}
+.settings-label { display: block; font-weight: bold; margin-bottom: 10px; }
+.dir-selector { display: flex; gap: 10px; }
+.dir-selector input {
+    flex: 1; background: #000; border: 1px solid #27272a;
+    color: white; padding: 10px; border-radius: 8px;
+}
+.action-btn-sm {
+    background: var(--color-accent); border: none; color: white;
+    padding: 10px 15px; border-radius: 8px; font-weight: bold;
+}
+.hint { font-size: 12px; color: var(--muted-text); margin-top: 5px; }
+
+/* Экран Профиля */
+.profile-card {
+    background: var(--color-surface);
+    border-radius: 24px;
+    padding: 30px;
+    text-align: center;
+}
+.avatar {
+    width: 80px; height: 80px; background: #27272a;
+    border-radius: 50%; display: flex; justify-content: center;
+    align-items: center; font-size: 32px; margin: 0 auto 15px auto;
+}
+#username-input {
+    background: none; border: none; border-bottom: 2px dashed var(--color-accent);
+    color: white; font-size: 22px; text-align: center; font-weight: bold; width: 80%;
+}
+.stats { display: flex; justify-content: space-around; margin-top: 25px; }
+.stat-item { display: flex; flex-direction: column; }
+.stat-item span { font-size: 24px; font-weight: bold; color: var(--color-accent); }
+.stat-item mark { background: none; color: var(--muted-text); font-size: 12px; }

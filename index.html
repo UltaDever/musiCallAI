@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>musiCall Pro</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        
+        <div id="screen-player" class="app-screen active">
+            <h1 class="main-text">musi<span class="CC">C</span>all</h1>
+            
+            <div class="player-mini-card">
+                <img src="img.jpg" alt="Обложка" class="img" id="player-img">
+                <div class="track-info">
+                    <div id="track-title" class="track-title">Папка не выбрана</div>
+                    <div id="track-artist" class="track-artist">Перейдите в настройки</div>
+                </div>
+                
+                <div class="volume-container">
+                    <i class="fas fa-volume-down"></i>
+                    <input type="range" id="volume-control" min="0" max="100" value="70">
+                    <span id="volume-value">70%</span>
+                </div>
+
+                <div class="progress-container">
+                    <span id="current-time">0:00</span>
+                    <input type="range" id="progress-bar" min="0" max="100" value="0">
+                    <span id="duration">0:00</span>
+                </div>
+
+                <div class="controls">
+                    <button id="btn-prev" class="ctrl-btn"><i class="fas fa-backward"></i></button>
+                    <button id="btn-play" class="ctrl-btn play-btn"><i class="fas fa-play"></i></button>
+                    <button id="btn-next" class="ctrl-btn"><i class="fas fa-forward"></i></button>
+                </div>
+            </div>
+
+            <div class="section-title">Моя Музыка</div>
+            <ul id="track-list" class="list-container">
+                <li class="empty-msg">Тут пока пусто. Настройте путь к музыке.</li>
+            </ul>
+        </div>
+
+        <div id="screen-settings" class="app-screen">
+            <h2 class="screen-header">Настройки плеере</h2>
+            
+            <div class="settings-group">
+                <label class="settings-label"><i class="fas fa-folder"></i> Рабочая директория</label>
+                <div class="dir-selector">
+                    <input type="text" id="dir-path-display" readonly placeholder="Папка по умолчанию: /Music">
+                    <button id="btn-select-dir" class="action-btn-sm">Изменить</button>
+                </div>
+                <p class="hint">Плеер будет автоматически сканировать эту папку при запуске</p>
+            </div>
+
+            <div class="settings-group">
+                <label class="settings-label"><i class="fas fa-list"></i> Управление Плейлистами</label>
+                <div class="playlist-form">
+                    <input type="text" id="new-playlist-name" placeholder="Название плейлиста">
+                    <button onclick="createNewPlaylist()" class="action-btn-sm">Создать</button>
+                </div>
+                <ul id="playlist-list" class="list-container-sm"></ul>
+            </div>
+        </div>
+
+        <div id="screen-profile" class="app-screen">
+            <h2 class="screen-header">Профиль пользователя</h2>
+            <div class="profile-card">
+                <div class="avatar"><i class="fas fa-user-music"></i></div>
+                <input type="text" id="username-input" value="Меломан" onchange="saveProfile()">
+                <div class="stats">
+                    <div class="stat-item"><span id="stat-tracks-count">0</span><mark>Треков</mark></div>
+                    <div class="stat-item"><span id="stat-playlists-count">0</span><mark>Плейлистов</mark></div>
+                </div>
+            </div>
+        </div>
+
+        <nav class="bottom-nav">
+            <button class="nav-item active" onclick="changeScreen('player')">
+                <i class="fas fa-music"></i><span>Плеер</span>
+            </button>
+            <button class="nav-item" onclick="changeScreen('settings')">
+                <i class="fas fa-cog"></i><span>Настройки</span>
+            </button>
+            <button class="nav-item" onclick="changeScreen('profile')">
+                <i class="fas fa-user"></i><span>Профиль</span>
+            </button>
+        </nav>
+
+    </div>
+    <audio id="audio-player"></audio>
+    <script src="app.js"></script>
+</body>
+</html>
