@@ -209,3 +209,28 @@ function deleteTrack(index) {
 audio.addEventListener('ended', () => {
     playTrack(currentTrackIndex + 1);
 });
+
+// Функция переключения экранов (вкладки Плеер, Настройки, Профиль)
+function changeScreen(screenId) {
+    // 1. Прячем все экраны приложения
+    document.querySelectorAll('.app-screen').forEach(screen => {
+        screen.classList.remove('active');
+    });
+    
+    // 2. Убираем подсветку со всех кнопок в меню
+    document.querySelectorAll('.nav-item').forEach(button => {
+        button.classList.remove('active');
+    });
+    
+    // 3. Показываем нужный экран
+    const targetScreen = document.getElementById(`screen-${screenId}`);
+    if (targetScreen) {
+        targetScreen.classList.add('active');
+    }
+    
+    // 4. Подсвечиваем кнопку, на которую нажали
+    // Ищем кнопку по переданному screenId внутри её события
+    if (event && event.currentTarget) {
+        event.currentTarget.classList.add('active');
+    }
+}
