@@ -9,11 +9,36 @@ const trackList = document.getElementById('track-list');
 
 // Инициализация при старте приложения
 initDB().then(() => {
-    loadSavedDirectory(); // Пытаемся автоматически загрузить прошлую папку
+    loadSavedDirectory(); 
     renderPlaylists();
 });
 
-// 1. БАЗА ДАННЫХ ДЛЯ СОХРАНЕНИЯ ДОСТУПА К ПАПКЕ
+// КОРРЕКТНАЯ НАВИГАЦИЯ (Работает на HTTPS и в PWA без ошибок)
+function changeScreen(screenId, e) {
+    // Прячем экраны
+    document.querySelectorAll('.app-screen').forEach(screen => {
+        screen.classList.remove('active');
+    });
+    // Убираем подсветку кнопок
+    document.querySelectorAll('.nav-item').forEach(button => {
+        button.classList.remove('active');
+    });
+    
+    // Включаем нужный экран
+    const targetScreen = document.getElementById(`screen-${screenId}`);
+    if (targetScreen) {
+        targetScreen.classList.add('active');
+    }
+    
+    // Безопасное подсвечивание кнопки меню (без использования глобального event)
+    if (e && e.currentTarget) {
+        e.currentTarget.classList.add('active');
+    } else if (window.event && window.event.currentTarget) {
+        window.event.currentTarget.classList.add('active');
+    }
+}
+
+// БАЗА ДАННЫХ ДЛЯ СОХРАНЕНИЯ ДОСТУПА К ПАПКЕ
 function initDB() {
     return new Promise((resolve) => {
         let request = indexedDB.open("musiCallDB", 1);
@@ -25,71 +50,83 @@ function initDB() {
             db = e.target.result;
             resolve();
         };
+        request.onerror = () => resolve(); // Защита от блокировки БД
     });
 }
 
-// Пытаемся прочитать старую папку без повторного выбора
+// Авто-загрузка папки
 async function loadSavedDirectory() {
     if (!db) return;
-    let tx = db.transaction("settings", "readonly");
-    let store = tx.objectStore("settings");
-    let request = store.get("dirHandle");
+    try {
+        let tx = db.transaction("settings", "readonly");
+        let store = tx.objectStore("settings");
+        let request = store.get("dirHandle");
 
-    request.onsuccess = async () => {
-        const dirHandle = request.result;
-        if (dirHandle) {
-            try {
-                // Запрашиваем у Android подтверждение прав (появится быстрое всплывающее окно)
+        request.onsuccess = async () => {
+            const dirHandle = request.result;
+            if (dirHandle) {
+                // Если это PWA на Android, то при старте Chrome спросит разрешение
                 if (await dirHandle.queryPermission({ mode: 'read' }) === 'granted' || 
                     await dirHandle.requestPermission({ mode: 'read' }) === 'granted') {
                     
                     document.getElementById('dir-path-display').value = dirHandle.name;
                     await readDirectory(dirHandle);
                 }
-            } catch (err) {
-                console.log("Старая папка больше недоступна, выберите заново");
             }
-        }
-    };
+        };
+    } catch(e) {
+        console.log("IndexedDB не поддерживается или заблокирован в данном режиме.");
+    }
 }
 
-// Функция чтения всех файлов в папке
+// Сканирование папки
 async function readDirectory(dirHandle) {
     tracks = [];
     for await (const entry of dirHandle.values()) {
         if (entry.kind === 'file' && entry.name.toLowerCase().endsWith('.mp3')) {
             const file = await entry.getFile();
             tracks.push({
-                name: file.name.replace(/\.[^/.]+$/, ""), // Убираем .mp3 из названия
-                url: URL.createObjectURL(file) // Создаем ссылку для воспроизведения
+                name: file.name.replace(/\.[^/.]+$/, ""), 
+                url: URL.createObjectURL(file) 
             });
         }
     }
-    if (tracks.length > 0) {
-        renderTracks();
-    }
+    renderTracks();
 }
 
-// Кнопка выбор папки
-document.getElementById('btn-select-dir').addEventListener('click', async () => {
-    try {
-        const dirHandle = await window.showDirectoryPicker();
-        
-        // Сохраняем "ключ" от папки в базу данных на будущее
-        let tx = db.transaction("settings", "readwrite");
-        tx.objectStore("settings").put(dirHandle, "dirHandle");
+// Кнопка выбора папки
+const btnSelectDir = document.getElementById('btn-select-dir');
+if (btnSelectDir) {
+    btnSelectDir.addEventListener('click', async () => {
+        // Проверка: поддерживает ли браузер/режим эту функцию
+        if (!window.showDirectoryPicker) {
+            alert('Ваш браузер заблокировал доступ к папкам по HTTPS. Пожалуйста, зайдите в меню Chrome (3 точки) и выберите "Добавить на главный экран" / "Установить приложение", после чего запустите плеер с иконки на экране телефона.');
+            return;
+        }
 
-        document.getElementById('dir-path-display').value = dirHandle.name;
-        await readDirectory(dirHandle);
-        alert(`Найдено и сохранено треков: ${tracks.length}`);
-    } catch (err) {
-        alert('Доступ к папке не получен. Откройте приложение через Google Chrome.');
-    }
-});
+        try {
+            const dirHandle = await window.showDirectoryPicker();
+            
+            if (db) {
+                let tx = db.transaction("settings", "readwrite");
+                tx.objectStore("settings").put(dirHandle, "dirHandle");
+            }
 
-// 2. ОТРИСОВКА СПИСКА И ПЛЕЕР
+            document.getElementById('dir-path-display').value = dirHandle.name;
+            await readDirectory(dirHandle);
+            alert(`Успешно! Найдено треков: ${tracks.length}`);
+        } catch (err) {
+            alert('Вы отменили выбор папки или браузер отклонил запрос.');
+        }
+    });
+}
+
 function renderTracks() {
     trackList.innerHTML = '';
+    if (tracks.length === 0) {
+        trackList.innerHTML = '<li class="empty-msg">Тут пока пусто. Нажмите "Изменить" в Настройках.</li>';
+        return;
+    }
     tracks.forEach((track, index) => {
         const li = document.createElement('li');
         li.className = `track-item ${index === currentTrackIndex ? 'current' : ''}`;
@@ -110,7 +147,7 @@ function playTrack(index) {
     audio.src = tracks[index].url;
     document.getElementById('track-title').textContent = tracks[index].name;
 
-    // Интеграция со шторкой Android
+    // Шторка Android (Media Session)
     if ('mediaSession' in navigator) {
         navigator.mediaSession.metadata = new MediaMetadata({
             title: tracks[index].name,
@@ -128,14 +165,14 @@ function playTrack(index) {
     renderTracks();
 }
 
-// Точный звук (100 делений)
+// Громкость (100 уровней)
 document.getElementById('volume-control').addEventListener('input', (e) => {
     let vol = e.target.value;
     audio.volume = vol / 100;
     document.getElementById('volume-value').textContent = `${vol}%`;
 });
 
-// 3. РАБОЧИЕ ПЛЕЙЛИСТЫ (Сохраняют только имена треков)
+// ПЛЕЙЛИСТЫ
 function createNewPlaylist() {
     const name = document.getElementById('new-playlist-name').value.trim();
     if (!name) return;
@@ -147,6 +184,7 @@ function createNewPlaylist() {
 
 function renderPlaylists() {
     const container = document.getElementById('playlist-list');
+    if (!container) return;
     container.innerHTML = '';
     Object.keys(playlists).forEach(name => {
         const li = document.createElement('li');
@@ -161,7 +199,7 @@ function renderPlaylists() {
 
 function addTrackToPlaylist(index) {
     const pNames = Object.keys(playlists);
-    if (pNames.length === 0) return alert("Создайте плейлист в Настройках!");
+    if (pNames.length === 0) return alert("Сначала создайте плейлист во вкладке Настройки!");
     
     let target = prompt(`В какой плейлист добавить?\nДоступные: ${pNames.join(', ')}`);
     if (target && playlists[target]) {
@@ -174,21 +212,18 @@ function addTrackToPlaylist(index) {
     }
 }
 
-// Включение плейлиста
 function playPlaylist(name) {
     let playlistTrackNames = playlists[name];
-    // Фильтруем основной список треков, оставляя только те, что есть в плейлисте
     let playlistTracks = tracks.filter(t => playlistTrackNames.includes(t.name));
     
-    if(playlistTracks.length === 0) {
-        alert("В этом плейлисте нет треков, которые сейчас есть в выбранной папке.");
+    if (playlistTracks.length === 0) {
+        alert("В плейлисте нет треков, доступных в текущей папке.");
         return;
     }
     
-    // Перезаписываем текущий список треков списком из плейлиста и запускаем первый
     tracks = playlistTracks;
     renderTracks();
-    changeScreen('player'); // Переключаем экран на плеер
+    changeScreen('player'); 
     playTrack(0);
 }
 
@@ -199,38 +234,12 @@ function deletePlaylist(name) {
 }
 
 function deleteTrack(index) {
-    if (confirm(`Убрать ${tracks[index].name} из текущего списка?`)) {
+    if (confirm(`Убрать ${tracks[index].name} из списка?`)) {
         tracks.splice(index, 1);
         renderTracks();
     }
 }
 
-// Переход на следующий трек по окончании
 audio.addEventListener('ended', () => {
     playTrack(currentTrackIndex + 1);
 });
-
-// Функция переключения экранов (вкладки Плеер, Настройки, Профиль)
-function changeScreen(screenId) {
-    // 1. Прячем все экраны приложения
-    document.querySelectorAll('.app-screen').forEach(screen => {
-        screen.classList.remove('active');
-    });
-    
-    // 2. Убираем подсветку со всех кнопок в меню
-    document.querySelectorAll('.nav-item').forEach(button => {
-        button.classList.remove('active');
-    });
-    
-    // 3. Показываем нужный экран
-    const targetScreen = document.getElementById(`screen-${screenId}`);
-    if (targetScreen) {
-        targetScreen.classList.add('active');
-    }
-    
-    // 4. Подсвечиваем кнопку, на которую нажали
-    // Ищем кнопку по переданному screenId внутри её события
-    if (event && event.currentTarget) {
-        event.currentTarget.classList.add('active');
-    }
-}
